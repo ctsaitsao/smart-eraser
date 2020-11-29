@@ -117,11 +117,11 @@ def synthesize(red,img,sample,col,size):
         
         # If red, preform synthesis
         if sum(red[row,col]) == 0:
-            red[row,col] = [255,255,255]
             template = getWindow(red,row,col,size)
             matches = findMatches(template,sample,size)
             match = rand.choice(matches)
             img[row,col] = sample[match[0],match[1]]
+            red[row,col] = sample[match[0],match[1]]
             record.append([row,col,sample[match[0],match[1]]])
 
 
@@ -203,7 +203,7 @@ for filename in os.listdir('Input'):
 
 # Find red pixels
 img = images[0]
-
+red = findRed(img)
 
 # Build sample image
 sample = img[150:200,50:70]
@@ -224,13 +224,12 @@ for i in range(len(images)-1):
     out = drawBound(images[i+1],pos[0],pos[1])
     out[40,pos[1]] = [255,255,255]
 
-    
     # Replace appropriate pixels
     for pixel in record:
         out[pixel[0],pixel[1]] = pixel[2]
 
-    red = findRed(out)
-
+    
+    
     for col in range(pos[1]-2,pos[1]+3):
         out,plus = synthesize(red,out,sample,col,9)
         record += plus
