@@ -3,16 +3,23 @@ import os
 import numpy as np
 import random as rand
 
-PINK = (147,20,255)     # Pink BRG Color
+##############################
+## Constants
+##############################
+
+PINK = (147,20,255)     # Pink BGR Color
 SIZEY = 10              # 0.5x tracking box height
 SIZEX = 6              # 0.5x tracking box width
 RADIUS = 5             # Local exhaustive search radius
 
+##############################
+## Functions
+##############################
 
 def findRed(img):
     '''
     This function takes an input image, detects the pixels containing red, and returns the image replacing the red
-    pixels with blank ones.
+    pixels with black ones.
     '''
 
     # converting from BGR to HSV color space
@@ -44,28 +51,35 @@ def findRed(img):
    
 def getWindow(img,row,col,n):
     '''
-    This function takes an image and a pixel location and creates an nxn matrix of the window around the pixel
+    This function takes an image and a pixel location and creates an nxn matrix containing the data from the image
+    around the pixel (the pixel location remains at the center)
     '''
 
-    size = int(n/2)
+    # Calculate number of pixels around center pixel to be saved
+    pad = int(n/2)
+
+    # Initialize output window
     out = np.zeros((n,n,3))
 
-    for r in range(-size,size+1):
-        for c in range(-size,size+1):
-            out[r+size][c+size] = img[row+r][col+c]
+    # Save image data
+    for r in range(-pad,pad+1):
+        for c in range(-pad,pad+1):
+            out[r+pad][c+pad] = img[row+r][col+c]
 
     return out
 
 def findMatches(T,I,size):
     '''
-
+    This function takes a template, a sample image, and the size of the template image and finds pixels of the
+    sample image that are within 20% of the minimum deviation from the template
     '''
 
+    # Array sizes
     rows,cols,trash = T.shape
     irows, icols, trash = I.shape
 
 
-    # Create template validMask
+    # Create template validMask (1s where template pixels are known, zeros otherwise)
     validMask = np.ones((rows,cols))
     for row in range(rows):
         for col in range(cols):
@@ -93,14 +107,14 @@ def findMatches(T,I,size):
 
     ssd /= TotWeight
 
-    # Find low cost pixels (matches))
+    # Find low cost pixels (matches)
     ErrThresh = 0.2
     thresh = np.min(ssd[ssd>0])*(1+ErrThresh)
 
     PixelList = []
     for i in range(irows):
         for j in range(icols):
-            if ssd[i][j] == 0:
+            if ssd[i][j] == 0:  # unchecked edges of image will have cost zero-- skip
                 continue
             elif ssd[i][j] <= thresh:
                 PixelList.append([i,j])
@@ -108,22 +122,27 @@ def findMatches(T,I,size):
     return(PixelList)
 
 def synthesize(red,img,sample,col,size):
+    '''
+    Takes an image, red, containing blank pixels where red has been detected in another input image, img. The
+    given column, col, of img will have red pixels removed and replaced with a pixel according generated using 
+    exemplar based texture synthesis via the Efros-Leung algorithm given the sample image, sample as an input.
+    '''
 
     # Find red pixels in column
     rows = img.shape[0]
     record = []
     
+    # Search column for red pixels
     for row in range(70,125):
         
         # If red, preform synthesis
         if sum(red[row,col]) == 0:
-            template = getWindow(red,row,col,size)
-            matches = findMatches(template,sample,size)
-            match = rand.choice(matches)
-            img[row,col] = sample[match[0],match[1]]
-            red[row,col] = sample[match[0],match[1]]
-            record.append([row,col,sample[match[0],match[1]]])
-
+            template = getWindow(red,row,col,size)          # Capture window around pixel to be replaced
+            matches = findMatches(template,sample,size)     # Find good matches that are similar to template
+            match = rand.choice(matches)                    # Choose random good match
+            img[row,col] = sample[match[0],match[1]]        # Update img
+            red[row,col] = sample[match[0],match[1]]        # Update red
+            record.append([row,col,sample[match[0],match[1]]])  # Save changed pixels
 
     return img,record
 
@@ -194,6 +213,10 @@ def ssd(I,T):
 
     return D
 
+##############################
+## Main Code
+##############################
+
 # Read all images in folder
 images = []
 for filename in os.listdir('Input'):
@@ -205,18 +228,17 @@ for filename in os.listdir('Input'):
 img = images[0]
 red = findRed(img)
 
-# Build sample image
+# Isolate sample image
 sample = img[150:200,50:70]
-record = []
 
-##############################
-## Run SSD
-##############################
+# Create list to store changed pixels
+record = []
 
 # Assign Boundary
 pos = [30,284]   # Manually Assigned initial tracking position
-outs = []       # Holds output images with boundary box
+outs = []        # Holds output images for video
 
+# Iterate through Frames implementing image tracking and texture synthesis
 for i in range(len(images)-1):
 
     # Find position of pen
@@ -224,17 +246,16 @@ for i in range(len(images)-1):
     out = drawBound(images[i+1],pos[0],pos[1])
     out[40,pos[1]] = [255,255,255]
 
-    # Replace appropriate pixels
+    # Replace changed pixels from previous images
     for pixel in record:
         out[pixel[0],pixel[1]] = pixel[2]
 
-    
-    
+    # Find new pixels at pen location to erase/synthesize (checks pen position +/- 2 pixels)
     for col in range(pos[1]-2,pos[1]+3):
         out,plus = synthesize(red,out,sample,col,9)
-        record += plus
+        record += plus # Save newly changed pixels
 
-    outs.append(out)
+    outs.append(out) 
 
 # Create output video
 
@@ -247,31 +268,3 @@ for image in outs:
 
 cv2.destroyAllWindows()
 video.release()
-
-# sample = img[150:200,50:70]
-
-
-# rows, cols, trash = img.shape
-# outs = []
-# for col in range(1,cols):
-#     red = findRed(img)
-#     img = synthesize(red,sample,-col,9)
-#     img[45,-col] = [255,255,255]
-#     out = np.copy(img)
-#     outs.append(out)
-
-
-# # Create output video
-# frame = outs[0]
-# height, width, layers = frame.shape
-# video = cv2.VideoWriter('output.avi', 0, 20, (width,height))
-
-# for image in outs:
-#     video.write(image)
-
-# cv2.destroyAllWindows()
-# video.release()
-
-
-
-
