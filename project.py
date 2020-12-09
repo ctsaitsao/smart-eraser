@@ -1,7 +1,7 @@
 import cv2 
+import os
 import numpy as np
 import random as rand
-import glob
 
 ##############################
 ## Constants
@@ -124,7 +124,7 @@ def _findMatches(T,I,size):
 def synthesize(red,img,sample,col,size):
     '''
     Takes an image, red, containing blank pixels where red has been detected in another input image, img. The
-    given column, col, of img will have red pixels removed and replaced with a pixel according generated using 
+    given column, col, of img will have red pixels removed and replaced with a pixel generated using 
     exemplar based texture synthesis via the Efros-Leung algorithm given the sample image, sample as an input.
     '''
 
@@ -138,7 +138,6 @@ def synthesize(red,img,sample,col,size):
         # If red, preform synthesis
         if sum(red[row,col]) == 0:
             template = _getWindow(red,row,col,size)          # Capture window around pixel to be replaced
-            # cv2.imwrite('get_window.jpg', template)
             matches = _findMatches(template,sample,size)     # Find good matches that are similar to template
             match = rand.choice(matches)                    # Choose random good match
             img[row,col] = sample[match[0],match[1]]        # Update img
@@ -218,56 +217,56 @@ def ssd(I,T):
 ## Main Code
 ##############################
 
-# Read all images in folder
-images = []
-for pathname in sorted(glob.glob('Input/*.jpg'))[1:]:
-    img = cv2.imread(pathname, cv2.IMREAD_COLOR)
-    if img is not None:
-        images.append(img)
+if __name__ == '__main__':
 
-# Find red pixels
-img = images[0]
-red = findRed(img)
+    # Read all images in folder
+    images = []
+    for filename in os.listdir('Input'):
+        img = cv2.imread(os.path.join('Input',filename),cv2.IMREAD_COLOR)
+        if img is not None:
+            images.append(img)
 
-# Isolate sample image
-sample = img[150:200,50:70]
+    # Find red pixels
+    img = images[0]
+    red = findRed(img)
 
-# Create list to store changed pixels
-record = []
+    # Isolate sample image
+    sample = img[150:200,50:70]
 
-# Assign Boundary
-pos = [30,284]   # Manually Assigned initial tracking position
-outs = []        # Holds output images for video
+    # Create list to store changed pixels
+    record = []
 
-# Iterate through Frames implementing image tracking and texture synthesis
-for i in range(len(images)-1):
+    # Assign Boundary
+    pos = [30,284]   # Manually Assigned initial tracking position
+    outs = []        # Holds output images for video
 
-    # Find position of pen
-    pos = imageTracking(images[i+1],pos[0],pos[1],images[i],ssd)
-    out = drawBound(images[i+1],pos[0],pos[1])
-    # cv2.imwrite('draw_bound.jpg', out)
-    out[40,pos[1]] = [255,255,255]
+    # Iterate through Frames implementing image tracking and texture synthesis
+    for i in range(len(images)-1):
 
-    # # Replace changed pixels from previous images
-    # for pixel in record:
-    #     out[pixel[0],pixel[1]] = pixel[2]
+        # Find position of pen
+        pos = imageTracking(images[i+1],pos[0],pos[1],images[i],ssd)
+        out = drawBound(images[i+1],pos[0],pos[1])
+        out[40,pos[1]] = [255,255,255]
 
-    # # Find new pixels at pen location to erase/synthesize (checks pen position +/- 2 pixels)
-    # for col in range(pos[1]-2,pos[1]+3):
-    #     out,plus = synthesize(red,out,sample,col,9)
-    #     # cv2.imwrite('synthesize.jpg', out)
-    #     record += plus # Save newly changed pixels
+        # Replace changed pixels from previous images
+        for pixel in record:
+            out[pixel[0],pixel[1]] = pixel[2]
 
-    outs.append(out) 
+        # Find new pixels at pen location to erase/synthesize (checks pen position +/- 2 pixels)
+        for col in range(pos[1]-2,pos[1]+3):
+            out,plus = synthesize(red,out,sample,col,9)
+            record += plus # Save newly changed pixels
 
-# Create output video
+        outs.append(out) 
 
-frame = outs[0]
-height, width, layers = frame.shape
-video = cv2.VideoWriter('output_tracking_only.avi', 0, 20, (width,height))
+    # Create output video
 
-for image in outs:
-    video.write(image)
+    frame = outs[0]
+    height, width, layers = frame.shape
+    video = cv2.VideoWriter('output.avi', 0, 20, (width,height))
 
-cv2.destroyAllWindows()
-video.release()
+    for image in outs:
+        video.write(image)
+
+    cv2.destroyAllWindows()
+    video.release()
