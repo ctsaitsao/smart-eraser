@@ -1,7 +1,7 @@
 import cv2 
-import os
 import numpy as np
 import random as rand
+import glob
 
 ##############################
 ## Constants
@@ -49,7 +49,7 @@ def findRed(img):
 
     return res1
    
-def getWindow(img,row,col,n):
+def _getWindow(img,row,col,n):
     '''
     This function takes an image and a pixel location and creates an nxn matrix containing the data from the image
     around the pixel (the pixel location remains at the center)
@@ -68,7 +68,7 @@ def getWindow(img,row,col,n):
 
     return out
 
-def findMatches(T,I,size):
+def _findMatches(T,I,size):
     '''
     This function takes a template, a sample image, and the size of the template image and finds pixels of the
     sample image that are within 20% of the minimum deviation from the template
@@ -137,8 +137,9 @@ def synthesize(red,img,sample,col,size):
         
         # If red, preform synthesis
         if sum(red[row,col]) == 0:
-            template = getWindow(red,row,col,size)          # Capture window around pixel to be replaced
-            matches = findMatches(template,sample,size)     # Find good matches that are similar to template
+            template = _getWindow(red,row,col,size)          # Capture window around pixel to be replaced
+            # cv2.imwrite('get_window.jpg', template)
+            matches = _findMatches(template,sample,size)     # Find good matches that are similar to template
             match = rand.choice(matches)                    # Choose random good match
             img[row,col] = sample[match[0],match[1]]        # Update img
             red[row,col] = sample[match[0],match[1]]        # Update red
@@ -219,8 +220,8 @@ def ssd(I,T):
 
 # Read all images in folder
 images = []
-for filename in os.listdir('Input'):
-    img = cv2.imread(os.path.join('Input',filename),cv2.IMREAD_COLOR)
+for pathname in sorted(glob.glob('Input/*.jpg'))[1:]:
+    img = cv2.imread(pathname, cv2.IMREAD_COLOR)
     if img is not None:
         images.append(img)
 
@@ -244,16 +245,18 @@ for i in range(len(images)-1):
     # Find position of pen
     pos = imageTracking(images[i+1],pos[0],pos[1],images[i],ssd)
     out = drawBound(images[i+1],pos[0],pos[1])
+    # cv2.imwrite('draw_bound.jpg', out)
     out[40,pos[1]] = [255,255,255]
 
-    # Replace changed pixels from previous images
-    for pixel in record:
-        out[pixel[0],pixel[1]] = pixel[2]
+    # # Replace changed pixels from previous images
+    # for pixel in record:
+    #     out[pixel[0],pixel[1]] = pixel[2]
 
-    # Find new pixels at pen location to erase/synthesize (checks pen position +/- 2 pixels)
-    for col in range(pos[1]-2,pos[1]+3):
-        out,plus = synthesize(red,out,sample,col,9)
-        record += plus # Save newly changed pixels
+    # # Find new pixels at pen location to erase/synthesize (checks pen position +/- 2 pixels)
+    # for col in range(pos[1]-2,pos[1]+3):
+    #     out,plus = synthesize(red,out,sample,col,9)
+    #     # cv2.imwrite('synthesize.jpg', out)
+    #     record += plus # Save newly changed pixels
 
     outs.append(out) 
 
@@ -261,7 +264,7 @@ for i in range(len(images)-1):
 
 frame = outs[0]
 height, width, layers = frame.shape
-video = cv2.VideoWriter('output.avi', 0, 20, (width,height))
+video = cv2.VideoWriter('output_tracking_only.avi', 0, 20, (width,height))
 
 for image in outs:
     video.write(image)
