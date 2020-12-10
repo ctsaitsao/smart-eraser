@@ -2,3 +2,4 @@
 *.png
 *.jpg
 report.docx
+.DS_Store
