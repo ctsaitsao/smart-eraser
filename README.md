@@ -6,10 +6,12 @@ The goal of this project is to implement a program that erases several handwritt
 
 ## Input
 The handwritten characters spell “Can you erase me?” perpendicularly to the newspaper page and act as the foreground. The background is the newspaper page but is not detailed enough to be legible.
-![](original.gif)
+<br>
+<br>
+<img src="original.gif" width="500">
 
 ## Output
-![](output.gif)
+<img src="output.gif" width="500">
 
 ## Algorithm
 1. Read all the separate frames from the input video.
@@ -26,9 +28,11 @@ The handwritten characters spell “Can you erase me?” perpendicularly to the 
 
 ## Intermediate Results
 1. Red detection:
-   ![](red_detection.png)
+   <br>
+   <img src="red_detection.png" width="500">
 2. Object tracking:
-   ![](object_tracking.gif)
+   <br>
+   <img src="object_tracking.gif" width="500">
    
 ## Dependencies
 - OpenCV
