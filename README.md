@@ -21,7 +21,7 @@ The handwritten characters spell “Can you erase me?” perpendicularly to the 
 5. Iterate through frames and do the following:
    1. Run `objectTracking()` to update position of pen.
    2. Replace pixels in new frame that were updated in previous frames.
-   3. Inpaint holes at pen location using texture via synthesize() function.
+   3. Inpaint holes at pen location using texture via `synthesize()` function.
    4. Save changed pixels to update with new frame.
    5. Save processed image to output list.
 6. Create output video from output list.
