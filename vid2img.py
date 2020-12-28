@@ -3,13 +3,13 @@ import cv2
 import os 
   
 # Read the video from specified path 
-cam = cv2.VideoCapture("Original.avi") 
+cam = cv2.VideoCapture("original.avi") 
   
 try: 
       
     # creating a folder named data 
-    if not os.path.exists('Input'): 
-        os.makedirs('Input') 
+    if not os.path.exists('input'): 
+        os.makedirs('input') 
   
 # if not created then raise error 
 except OSError: 
@@ -25,7 +25,7 @@ while(True):
   
     if ret: 
         # if video is still left continue creating images 
-        name = './Input/' + '{0:04}'.format(currentframe) + '.jpg'
+        name = './input/' + '{0:04}'.format(currentframe) + '.jpg'
         print ('Creating...' + name) 
   
         # writing the extracted images 

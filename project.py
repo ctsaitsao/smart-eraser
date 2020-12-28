@@ -221,7 +221,7 @@ if __name__ == '__main__':
 
     # Read all images in folder
     images = []
-    for pathname in sorted(glob.glob('Input/*.jpg'))[1:]:
+    for pathname in sorted(glob.glob('input/*.jpg'))[1:]:
         img = cv2.imread(pathname, cv2.IMREAD_COLOR)
         if img is not None:
             images.append(img)
