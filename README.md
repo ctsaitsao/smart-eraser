@@ -1,5 +1,5 @@
 # Smart Eraser Project
-## Authors: Nathaniel Nyberg, Christopher Tsai
+### Authors: Nathaniel Nyberg, Christopher Tsai
 Final project for EE 332: Introduction to Computer Vision, Northwestern University, Fall 2020.
 
 ## Overview
